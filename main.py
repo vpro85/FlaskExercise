@@ -14,51 +14,51 @@ API_URI = "http://localhost:5000/"
 GITHUB_API_URI = "https://api.github.com/"
 
 
-class RequestLogModel(db.Model):
+class RequestsLogModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     requests_body = db.Column(db.String(300), nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False)
     status_code = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
-        return f"RequestLog(requests_body = {requests_body}, timestamp = {timestamp}, status_code={status_code})"
+        return f"RequestsLog(requests_body = {requests_body}, timestamp = {timestamp}, status_code={status_code})"
 
 
+# use this to create DB at first run
 # db.create_all()
 
 # Logging
 def logging(request_uri, status_code):
-    req_log = RequestLogModel(requests_body=request_uri, timestamp=datetime.now(), status_code=status_code)
+    req_log = RequestsLogModel(requests_body=request_uri, timestamp=datetime.now(), status_code=status_code)
     db.session.add(req_log)
     db.session.commit()
+
+
+# Getting info
+def retrieving_info(repo_owner, repo_name, request_postfix=''):
+    request_uri = GITHUB_API_URI + 'repos/' + repo_owner + '/' + repo_name
+    if request_postfix:
+        request_uri = request_uri + '/' + request_postfix
+    response = requests.get(request_uri)
+    # Logging
+    logging(request_uri, response.status_code)
+    # If status isn't equal 200, then stop
+    if response.status_code != 200:
+        abort(response.status_code, message="Status: " + str(response.status_code) + " " + response.reason)
+    # Otherwise, display repo information
+    return response.json()
 
 
 # 1.	Get repo details.
 class Repo(Resource):
     def get(self, repo_owner, repo_name):
-        request_uri = GITHUB_API_URI + 'repos/' + repo_owner + '/' + repo_name
-        response = requests.get(request_uri)
-        # Logging
-        logging(request_uri, response.status_code)
-        # If status isn't equal 200, then stop
-        if response.status_code != 200:
-            abort(response.status_code, message="Status: " + str(response.status_code) + " " + response.reason)
-        # Otherwise, display repo information
-        return response.json()
+        return retrieving_info(repo_owner, repo_name)
 
 
 # 2.	Get a list of all pull requests.
 class Pulls(Resource):
     def get(self, repo_owner, repo_name):
-        request_uri = GITHUB_API_URI + 'repos/' + repo_owner + '/' + repo_name + '/pulls'
-        response = requests.get(request_uri)
-        # Logging
-        logging(request_uri, response.status_code)
-        # If status isn't equal 200, then stop
-        if response.status_code != 200:
-            abort(response.status_code, message="Status: " + str(response.status_code) + " " + response.reason)
-        # Otherwise, display repo information
-        return response.json()
+        return retrieving_info(repo_owner, repo_name, 'pulls')
 
 
 # 3.	Get a list of all pull requests which have not been merged for two weeks or more.
@@ -82,29 +82,13 @@ class OldPulls(Resource):
 # 4.	Get a list of all issues.
 class Issues(Resource):
     def get(self, repo_owner, repo_name):
-        request_uri = GITHUB_API_URI + 'repos/' + repo_owner + '/' + repo_name + '/issues'
-        response = requests.get(request_uri)
-        # Logging
-        logging(request_uri, response.status_code)
-        # If status isn't equal 200, then stop
-        if response.status_code != 200:
-            abort(response.status_code, message="Status: " + str(response.status_code) + " " + response.reason)
-        # Otherwise, display repo information
-        return response.json()
+        return retrieving_info(repo_owner, repo_name, 'issues')
 
 
 #     5.	Get a list of all forks.
 class Forks(Resource):
     def get(self, repo_owner, repo_name):
-        request_uri = GITHUB_API_URI + 'repos/' + repo_owner + '/' + repo_name + '/forks'
-        response = requests.get(request_uri)
-        # Logging
-        logging(request_uri, response.status_code)
-        # If status isn't equal 200, then stop
-        if response.status_code != 200:
-            abort(response.status_code, message="Status: " + str(response.status_code) + " " + response.reason)
-        # Otherwise, display repo information
-        return response.json()
+        return retrieving_info(repo_owner, repo_name, 'forks')
 
 
 api.add_resource(Repo, "/<string:repo_owner>/<string:repo_name>")
