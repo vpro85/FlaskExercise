@@ -65,7 +65,7 @@ class Pulls(Resource):
 class OldPulls(Resource):
     def get(self, repo_owner, repo_name):
         # Get a list of all pull requests from this Repo
-        data = Pulls.get(self, repo_owner, repo_name)
+        data = retrieving_info(repo_owner, repo_name, 'pulls')
         # Search for an unmerged pull-requests with creation date more the 2 weeks ago
         old_pulls = []
         for i in range(len(data)):
